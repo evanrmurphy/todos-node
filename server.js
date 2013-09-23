@@ -1,9 +1,20 @@
 var _        = require('underscore')
   , Backbone = require('backbone') 
+  , fs       = require('fs')
   , express  = require('express') 
   , server   = express() 
-  , fs       = require('fs')
 
+
+var idCounter = 0;
+fs.readFile('db/id_counter', {encoding: 'utf8'}, function(err, data) {
+  if (err) throw err
+  idCounter = parseInt(data)
+})
+uniqueId = function(prefix) {
+  var id = ++idCounter + '';
+  return prefix ? prefix + id : id;
+  fs.writeFile('db/id_counter', idCounter, function(err){ if (err) throw err })
+};
 
 // Todo Model
 // ----------
@@ -14,19 +25,16 @@ var Todo = Backbone.Model.extend({
   // Default attributes for the todo item.
   defaults: function() {
     return {
+      id: uniqueId(),
       title: "empty todo...",
       order: Todos.nextOrder(),
       done: false
     };
   },
 
-  initialize: function() {
-    this.set('id', _.uniqueId())
-  },
-
   // Toggle the `done` state of this todo item.
   toggle: function() {
-    //this.save({done: !this.get("done")});
+    this.set({done: !this.get("done")});
   }
 
 });
@@ -65,47 +73,61 @@ var TodoList = Backbone.Collection.extend({
 
 // Create our global collection of **Todos**.
 var Todos = new TodoList;
+fs.readFile('db/todos', {encoding: 'utf8'}, function(err, data) {
+  if (err) throw err
+  Todos.reset( data ? JSON.parse(data) : [] )
 
-server.use('/static', express.static(__dirname + '/static'))
-server.use(express.bodyParser())
+  server.use('/static', express.static(__dirname + '/static'))
+  server.use(express.bodyParser())
 
-server.get('/', function(req, res) {
-  fs.readFile('index.html', {encoding: 'utf8'}, function(err, data) {
-    if (err) throw err
-    res.send(data)
+  server.get('/', function(req, res) {
+    fs.readFile('index.html', {encoding: 'utf8'}, function(err, data) {
+      if (err) throw err
+      res.send(data)
+    })
   })
-})
 
-server.get('/todos', function(req, res) {
-  res.setHeader('Content-Type', 'application/json')
-  res.send(Todos)
-})
+  server.get('/todos', function(req, res) {
+    res.setHeader('Content-Type', 'application/json')
+    res.send(Todos)
+  })
 
-server.get('/todos/:id', function(req, res) {
-  res.setHeader('Content-Type', 'application/json')
-  var todo = Todos.get(req.params.id)
-  res.send(todo)
-})
+  server.get('/todos/:id', function(req, res) {
+    res.setHeader('Content-Type', 'application/json')
+    var todo = Todos.get(req.params.id)
+    res.send(todo)
+  })
 
-server.post('/todos', function(req, res) {
-  res.setHeader('Content-Type', 'application/json')
-  var todo = Todos.add(req.body)
-  res.send(todo)
-})
+  server.post('/todos', function(req, res) {
+    res.setHeader('Content-Type', 'application/json')
+    var todo = Todos.add(req.body)
+    fs.writeFile('db/todos', JSON.stringify(Todos.toJSON()), function(err) {
+      if (err) throw err
+      res.send(todo)
+    })
+  })
 
-server.put('/todos/:id', function(req, res) {
-  res.setHeader('Content-Type', 'application/json')
-  var todo = Todos.get(req.params.id)
-  todo.set(req.body)
-  res.send(todo)
-})
+  server.put('/todos/:id', function(req, res) {
+    res.setHeader('Content-Type', 'application/json')
+    var todo = Todos.get(req.params.id)
+    todo.set(req.body)
+    res.send(todo)
+    fs.writeFile('db/todos', JSON.stringify(Todos.toJSON()), function(err) {
+      if (err) throw err
+      res.send(todo)
+    })
+  })
 
-server.delete('/todos/:id', function(req, res) {
-  res.setHeader('Content-Type', 'application/json')
-  var todo = Todos.get(req.params.id)
-  Todos.remove(todo)
-  res.send(todo)
-})
+  server.delete('/todos/:id', function(req, res) {
+    res.setHeader('Content-Type', 'application/json')
+    var todo = Todos.get(req.params.id)
+    Todos.remove(todo)
+    fs.writeFile('db/todos', JSON.stringify(Todos.toJSON()), function(err) {
+      if (err) throw err
+      res.send(todo)
+    })
+  })
 
-server.listen(1337)
-console.log('Listening on port 1337')
+  server.listen(1337)
+  console.log('Listening on port 1337')
+})
