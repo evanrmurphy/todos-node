@@ -1,12 +1,16 @@
-var fs = require('fs');
-var http = require('http');
+var
+  express = require('express'),
+  server  = express(),
+  fs      = require('fs');
 
-var server = http.createServer(function (req, res) {
-  res.writeHead(200, {'Content-Type': 'text/html'});
+server.use('/static', express.static(__dirname + '/static'));
+
+server.get('/', function(req, res){
   fs.readFile('index.html', {encoding: 'utf8'}, function(err, data) {
     if (err) throw err;
-    res.end(data);
+    res.send(data);
   });
-}).listen(1337, '127.0.0.1');
-console.log('Server running at http://127.0.0.1:1337/');
+});
 
+server.listen(1337);
+console.log('Listening on port 1337');
