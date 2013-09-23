@@ -1,7 +1,5 @@
 // An example Backbone application contributed by
-// [Jérôme Gravel-Niquet](http://jgn.me/). This demo uses a simple
-// [LocalStorage adapter](backbone-localstorage.html)
-// to persist Backbone models within your browser.
+// [Jérôme Gravel-Niquet](http://jgn.me/). 
 
 // Load the application once the DOM is ready, using `jQuery.ready`:
 $(function(){
@@ -23,7 +21,7 @@ $(function(){
 
     // Toggle the `done` state of this todo item.
     toggle: function() {
-      this.save({done: !this.get("done")});
+      //this.save({done: !this.get("done")});
     }
 
   });
@@ -31,15 +29,12 @@ $(function(){
   // Todo Collection
   // ---------------
 
-  // The collection of todos is backed by *localStorage* instead of a remote
-  // server.
   var TodoList = Backbone.Collection.extend({
 
     // Reference to this collection's model.
     model: Todo,
 
-    // Save all of the todo items under the `"todos-backbone"` namespace.
-    localStorage: new Backbone.LocalStorage("todos-backbone"),
+    url: '/todos.json',
 
     // Filter down the list of all todo items that are finished.
     done: function() {
@@ -120,7 +115,7 @@ $(function(){
       if (!value) {
         this.clear();
       } else {
-        this.model.save({title: value});
+        //this.model.save({title: value});
         this.$el.removeClass("editing");
       }
     },
@@ -159,7 +154,7 @@ $(function(){
 
     // At initialization we bind to the relevant events on the `Todos`
     // collection, when items are added or changed. Kick things off by
-    // loading any preexisting todos that might be saved in *localStorage*.
+    // loading any preexisting todos.
     initialize: function() {
 
       this.input = this.$("#new-todo");
@@ -172,7 +167,7 @@ $(function(){
       this.footer = this.$('footer');
       this.main = $('#main');
 
-      Todos.fetch();
+      //Todos.fetch();
     },
 
     // Re-rendering the App just means refreshing the statistics -- the rest
@@ -205,13 +200,13 @@ $(function(){
       Todos.each(this.addOne, this);
     },
 
-    // If you hit return in the main input field, create new **Todo** model,
-    // persisting it to *localStorage*.
+    // If you hit return in the main input field, create new **Todo** model.
     createOnEnter: function(e) {
       if (e.keyCode != 13) return;
       if (!this.input.val()) return;
 
-      Todos.create({title: this.input.val()});
+      //Todos.create({title: this.input.val()});
+      Todos.add({title: this.input.val()});
       this.input.val('');
     },
 
@@ -223,7 +218,7 @@ $(function(){
 
     toggleAllComplete: function () {
       var done = this.allCheckbox.checked;
-      Todos.each(function (todo) { todo.save({'done': done}); });
+      //Todos.each(function (todo) { todo.save({'done': done}); });
     }
 
   });
