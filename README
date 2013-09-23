@@ -1,5 +1,5 @@
 Toy application to learn more about node.js and
-using it with Backbone. Takes the canonical Backbone
-example app -- Jérôme Gravel-Niquet's todo list app --
-and replace the local storage backend with a node.js
+using it with Backbone. Plan is to take the canonical
+Backbone example app -- Jérôme Gravel-Niquet's todo list
+app -- and replace the local storage backend with a node.js
 one.
