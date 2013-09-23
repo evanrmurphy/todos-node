@@ -1,26 +1,33 @@
-var _         = require('underscore')
-  , Backbone  = require('backbone') 
-  , fs        = require('fs')
-  , express   = require('express') 
-  , server    = express() 
+var _ = require('underscore')
+  , Backbone = require('backbone') 
+  , fs = require('fs')
+  , express = require('express') 
+  , server = express() 
   , idCounter
+  , idCounterDb = 'db/id_counter'
 
-fs.readFile( 'db/id_counter'
-           , {encoding: 'utf8'}
-           , function(err, data) {
-               if (err) throw err
-               idCounter = parseInt(data)
-             }
-           )
+var fetchIdCounter = function() {
+  fs.readFile( idCounterDb
+             , {encoding: 'utf8'}
+             , function(err, data) {
+                 if (err) throw err
+                 idCounter = parseInt(data)
+               }
+             )
+}
+
+var saveIdCounter = function() {
+  fs.writeFile( idCounterDb
+              , idCounter
+              , function(err){ if (err) throw err }
+              )
+}
 
 var uniqueId = function(prefix) {
   if (_.isUndefined(idCounter)) 
     console.log('idCounter not defined yet')
   var id = ++idCounter + ''
-  fs.writeFile( 'db/id_counter'
-              , idCounter
-              , function(err){ if (err) throw err }
-              )
+  saveIdCounter()
   return prefix ? prefix + id : id
 }
 
@@ -40,7 +47,9 @@ var Todo = Backbone.Model.extend
 
 var TodoList = Backbone.Collection.extend
   ( { model: Todo
-    , url: '/todos'
+    , initialize: function(models, options) {
+        this.db = options.db
+      }
     , done: function() {
         return this.where({done: true})
       }
@@ -54,20 +63,27 @@ var TodoList = Backbone.Collection.extend
         return this.last().get('order') + 1
       }
     , comparator: 'order'
+    , save: function(callback) {
+        fs.writeFile( this.db
+                    , JSON.stringify(this.toJSON())
+                    , function(err) {
+                        if (err) throw err
+                        callback()
+                      }
+                    )
+      }
+    , fetch: function(callback) {
+        fs.readFile( this.db
+                   , {encoding: 'utf8'}
+                   , _.bind(function(err, data) {
+                       if (err) throw err
+                       this.reset( data ? JSON.parse(data) : [] )
+                       callback()
+                     }, this)
+                   )
+      }
     }
   )
-
-var Todos = new TodoList
-fs.readFile( 'db/todos'
-           , {encoding: 'utf8'}
-           , function(err, data) {
-               if (err) throw err
-               Todos.reset( data ? JSON.parse(data) : [] )
-
-               server.listen(1337)
-               console.log('Listening on port 1337')
-             }
-           )
 
 server.use('/static', express.static(__dirname + '/static'))
 server.use(express.bodyParser())
@@ -103,13 +119,7 @@ server.post( '/todos'
            , function(req, res) {
                res.setHeader('Content-Type', 'application/json')
                var todo = Todos.add(req.body)
-               fs.writeFile( 'db/todos'
-                           , JSON.stringify(Todos.toJSON())
-                           , function(err) {
-                               if (err) throw err
-                               res.send(todo) 
-                             }
-                           )
+               Todos.save(function(){ res.send(todo) })
               }
             )
 
@@ -118,14 +128,7 @@ server.put( '/todos/:id'
               res.setHeader('Content-Type', 'application/json')
               var todo = Todos.get(req.params.id)
               todo.set(req.body)
-              res.send(todo)
-              fs.writeFile( 'db/todos'
-                          , JSON.stringify(Todos.toJSON())
-                          , function(err) {
-                              if (err) throw err
-                              res.send(todo)
-                            }
-                          )
+              Todos.save(function(){ res.send(todo) })
             }
           )
 
@@ -134,12 +137,13 @@ server.delete( '/todos/:id'
                  res.setHeader('Content-Type', 'application/json')
                  var todo = Todos.get(req.params.id)
                  Todos.remove(todo)
-                 fs.writeFile( 'db/todos'
-                             , JSON.stringify(Todos.toJSON())
-                             , function(err) {
-                                 if (err) throw err
-                                 res.send(todo)
-                               }
-                             )
+                 Todos.save(function(){ res.send(todo) })
                }
              )
+
+fetchIdCounter()
+var Todos = new TodoList([], {db: 'db/todos'})
+Todos.fetch(function() {
+  server.listen(1337)
+  console.log('Listening on port 1337')
+})
