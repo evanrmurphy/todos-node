@@ -21,7 +21,7 @@ $(function(){
 
     // Toggle the `done` state of this todo item.
     toggle: function() {
-      //this.save({done: !this.get("done")});
+      this.save({done: !this.get("done")});
     }
 
   });
@@ -34,7 +34,7 @@ $(function(){
     // Reference to this collection's model.
     model: Todo,
 
-    url: '/todos.json',
+    url: '/todos',
 
     // Filter down the list of all todo items that are finished.
     done: function() {
@@ -115,7 +115,7 @@ $(function(){
       if (!value) {
         this.clear();
       } else {
-        //this.model.save({title: value});
+        this.model.save({title: value});
         this.$el.removeClass("editing");
       }
     },
@@ -167,7 +167,7 @@ $(function(){
       this.footer = this.$('footer');
       this.main = $('#main');
 
-      //Todos.fetch();
+      Todos.fetch();
     },
 
     // Re-rendering the App just means refreshing the statistics -- the rest
@@ -205,8 +205,7 @@ $(function(){
       if (e.keyCode != 13) return;
       if (!this.input.val()) return;
 
-      //Todos.create({title: this.input.val()});
-      Todos.add({title: this.input.val()});
+      Todos.create({title: this.input.val()});
       this.input.val('');
     },
 
@@ -218,7 +217,7 @@ $(function(){
 
     toggleAllComplete: function () {
       var done = this.allCheckbox.checked;
-      //Todos.each(function (todo) { todo.save({'done': done}); });
+      Todos.each(function (todo) { todo.save({'done': done}); });
     }
 
   });
